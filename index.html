@@ -1243,7 +1243,7 @@ document.getElementById("agenda").innerHTML = AG.map(([h,e,i]) => `<li><time>${h
       <path d="${line} L${w} ${h} L0 ${h}Z" fill="url(#${id}a)"/><path d="${line}" fill="none" stroke="${c2}" stroke-width="2.2"/>
       <circle cx="${P[P.length-1][0]-3}" cy="${P[P.length-1][1]}" r="4" fill="#fff"/></svg>`;
   }
-  const TAG={bolsa:"Bolsa",cambio:"Câmbio",cripto:"Cripto",economia:"Economia",commod:"Commodities",inter:"Internacional"};
+  const TAG={bolsa:"Bolsa",cambio:"Dólar e câmbio",cripto:"Cripto",economia:"Economia",commod:"Petróleo e commodities",inter:"Internacional"};
 
   /* ---- notícias de exemplo (usadas só se a API falhar) ---- */
   const now=Date.now(), m=x=>now-x*60000;
@@ -1270,7 +1270,8 @@ document.getElementById("agenda").innerHTML = AG.map(([h,e,i]) => `<li><time>${h
   const meta=n=>`<span class="ago">${esc(n.source)} | ${ago(n.date)}</span>`;
 
   function renderNews(items){
-    const [lead,...rest]=items, mids=rest.slice(0,2), most=rest.slice(2,7), smalls=rest.slice(7,11);
+    const li=Math.max(0,items.findIndex(n=>n.summary&&n.summary.length>40));
+    const lead=items[li], rest=items.filter((_,i)=>i!==li), mids=rest.slice(0,2), most=rest.slice(2,7), smalls=rest.slice(7,11);
     const feed=items.length>11?rest.slice(11):items;
     $("lead").className="lead-story";
     $("lead").innerHTML=`<a class="nw-card" ${href(lead)}><span class="cover">${cover(lead.cat,hash(lead.title),800,525)}</span><span class="badge-top">Destaque</span>

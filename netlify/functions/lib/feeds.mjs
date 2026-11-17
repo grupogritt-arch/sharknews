@@ -1,11 +1,12 @@
 // Fontes de notícias (RSS). Para trocar ou adicionar fontes, edite esta lista.
 export const FEEDS = [
-  { url: "https://br.investing.com/rss/news.rss",     source: "Investing.com", cat: null },
-  { url: "https://br.investing.com/rss/news_25.rss",  source: "Investing.com", cat: "bolsa" },
-  { url: "https://br.investing.com/rss/news_1.rss",   source: "Investing.com", cat: "cambio" },
-  { url: "https://br.investing.com/rss/news_301.rss", source: "Investing.com", cat: "cripto" },
-  { url: "https://br.investing.com/rss/news_11.rss",  source: "Investing.com", cat: "commod" },
-  { url: "https://br.investing.com/rss/news_14.rss",  source: "Investing.com", cat: "economia" },
+  // Investing.com Brasil: só as editorias do foco do Shark News
+  { url: "https://br.investing.com/rss/news_1.rss",   source: "Investing.com", cat: "cambio" },   // câmbio / dólar
+  { url: "https://br.investing.com/rss/news_11.rss",  source: "Investing.com", cat: "commod" },   // petróleo e commodities
+  { url: "https://br.investing.com/rss/news_301.rss", source: "Investing.com", cat: "cripto" },   // criptomoedas
+  { url: "https://br.investing.com/rss/news_14.rss",  source: "Investing.com", cat: "economia" }, // economia
+  { url: "https://br.investing.com/rss/news_95.rss",  source: "Investing.com", cat: "economia" }, // indicadores econômicos
+  // Portais gerais: entram só as notícias que batem com o foco
   { url: "https://www.infomoney.com.br/feed/",        source: "InfoMoney",     cat: null },
   { url: "https://www.moneytimes.com.br/feed/",       source: "Money Times",   cat: null }
 ];
@@ -18,7 +19,9 @@ function decode(s = "") {
     .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCodePoint(parseInt(n, 16)))
     .replace(/&([a-z]+);/gi, (m, n) => ENT[n.toLowerCase()] ?? m);
 }
-const strip = s => decode(s).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+const strip = s => decode(
+    String(s).replace(/<!\[CDATA\[([\s\S]*?)\]\]>/g, "$1").replace(/<[^>]*>/g, " ")
+  ).replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
 function tag(block, name) {
   const m = block.match(new RegExp(`<${name}(?:\\s[^>]*)?>([\\s\\S]*?)</${name}>`, "i"));
   return m ? m[1] : "";
@@ -34,18 +37,22 @@ export function parseRss(xml, feed) {
     let summary = strip(tag(b, "description"));
     if (summary.length > 240) summary = summary.slice(0, 237).replace(/\s+\S*$/, "") + "…";
     return { title, link, date, summary, source: feed.source, cat: feed.cat || guessCat(title + " " + summary) };
-  }).filter(i => i.title && /^https?:\/\//.test(i.link));
+  }).filter(i => i.title && i.cat && /^https?:\/\//.test(i.link) && !SKIP_LINK.test(i.link) && !SKIP_TITLE.test(i.title));
 }
 
+// Foco: dólar, petróleo, criptomoedas e economia. Retorna null quando a notícia está fora do foco.
 export function guessCat(t) {
   t = t.toLowerCase();
-  if (/bitcoin|cripto|ethereum|\bbtc\b|blockchain|solana/.test(t)) return "cripto";
-  if (/dólar|dolar|câmbio|cambio|\beuro\b|iene|libra|moeda/.test(t)) return "cambio";
-  if (/petróleo|petroleo|\bouro\b|minério|minerio|commodit|soja|milho|brent|wti/.test(t)) return "commod";
-  if (/wall street|nova york|s&p|nasdaq|dow jones|\bfed\b|china|europa|japão|eua\b/.test(t)) return "inter";
-  if (/ibovespa|ações|acoes|bolsa|\bb3\b|dividend|fii|fundos imobili/.test(t)) return "bolsa";
-  return "economia";
+  if (/bitcoin|cripto|ethereum|\bbtc\b|blockchain|solana|stablecoin|etf de bitcoin/.test(t)) return "cripto";
+  if (/dólar|dolar|câmbio|cambio|\beuro\b|iene|libra esterlina|\bmoedas?\b|\breal\b.*(dólar|moeda)/.test(t)) return "cambio";
+  if (/petróleo|petroleo|petrobras|\bopep\b|brent|\bwti\b|combustíve|gasolina|diesel|\bouro\b|commodit|minério|minerio/.test(t)) return "commod";
+  if (/juros|selic|copom|inflação|inflacao|ipca|igp-?m|\bpib\b|fiscal|tesouro|banco central|\bfed\b|federal reserve|desemprego|payroll|recessão|economia|dívida pública|divida publica|ibovespa|mercado financeiro|taxa de câmbio/.test(t)) return "economia";
+  return null;
 }
+
+// Tipos de conteúdo automático que não interessam ao leitor do Shark News
+const SKIP_LINK = /\/(transcripts|insider-trading-news|earnings)\//i;
+const SKIP_TITLE = /^por que as ações d[aoe]s? |compra US\$ [\d.,]+ em ações|vende US\$ [\d.,]+ em ações/i;
 
 export async function loadNews() {
   const results = await Promise.all(FEEDS.map(async f => {
