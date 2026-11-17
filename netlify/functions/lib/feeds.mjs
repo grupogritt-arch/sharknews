@@ -90,9 +90,22 @@ export async function loadNews() {
     if (seen.has(k)) continue;
     seen.add(k); all.push(it);
   }
+  const items = all.slice(0, 60);
+  // Notícias do topo sem foto no feed: busca a imagem de compartilhamento (og:image) da própria matéria
+  await Promise.all(items.slice(0, 14).filter(i => !i.image).map(async i => {
+    try {
+      const r = await fetch(i.link, { headers: { "User-Agent": "Mozilla/5.0 (compatible; SharkNewsBot/1.0)" }, signal: AbortSignal.timeout(3500) });
+      if (!r.ok) return;
+      const html = (await r.text()).slice(0, 200000);
+      const m = html.match(/<meta[^>]+(?:property|name)=["'](?:og:image|twitter:image)["'][^>]*content=["']([^"']+)["']/i)
+             || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]*(?:property|name)=["'](?:og:image|twitter:image)["']/i);
+      const u = m && decode(m[1]).trim();
+      if (u && /^https:\/\//.test(u)) i.image = u;
+    } catch (e) {}
+  }));
   return {
     updated: Date.now(),
-    items: all.slice(0, 60),
+    items,
     sources: results.map(({ items, ...r }) => r)
   };
 }

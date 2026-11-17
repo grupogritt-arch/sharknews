@@ -1101,7 +1101,7 @@ const LINKS = {
   educacional: "https://sharkproeduc.com",
   ia: "https://sharkpro.app/",
   corretora: "http://r.ryvon.io/l/1196/1241",
-  telegram: "https://t.me/+D3ismzrNUq84MDdk"
+  telegram: "https://t.me/+bJnfr9NxG5UzNjA0"
 };
 document.querySelectorAll("[data-link]").forEach(a => {
   const url = LINKS[a.dataset.link];
@@ -1277,7 +1277,8 @@ document.getElementById("agenda").innerHTML = AG.map(([h,e,i]) => `<li><time>${h
   const photo=n=>n.image?`<img class="ph" src="${esc(n.image)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">`:"";
 
   function renderNews(items){
-    const li=Math.max(0,items.findIndex(n=>n.summary&&n.summary.length>40));
+    const pick=f=>items.findIndex(f);
+    let li=pick(n=>n.image&&n.summary&&n.summary.length>40); if(li<0) li=pick(n=>n.image); if(li<0) li=pick(n=>n.summary&&n.summary.length>40); if(li<0) li=0;
     const lead=items[li], rest=items.filter((_,i)=>i!==li), mids=rest.slice(0,2), most=rest.slice(2,7), smalls=rest.slice(7,11);
     const feed=items.length>11?rest.slice(11):items;
     $("lead").className="lead-story";
