@@ -27,6 +27,22 @@ function tag(block, name) {
   return m ? m[1] : "";
 }
 
+// Imagem de capa que o próprio feed disponibiliza (enclosure, media:content, media:thumbnail ou 1ª imagem do texto)
+function pickImage(b) {
+  const tries = [];
+  for (const m of b.matchAll(/<(?:media:content|media:thumbnail|enclosure)\b[^>]*>/gi)) {
+    const tagTxt = m[0], u = tagTxt.match(/url="([^"]+)"/i);
+    if (!u) continue;
+    const type = (tagTxt.match(/type="([^"]+)"/i) || [])[1] || "", medium = (tagTxt.match(/medium="([^"]+)"/i) || [])[1] || "";
+    if (/image/i.test(type) || /image/i.test(medium) || /\.(jpe?g|png|webp|avif)(\?|$)/i.test(u[1]) || /media:thumbnail/i.test(tagTxt)) tries.push(u[1]);
+  }
+  const html = decode(tag(b, "content:encoded") + " " + tag(b, "description"));
+  const img = html.match(/<img\b[^>]*\bsrc="([^"]+)"/i);
+  if (img) tries.push(img[1]);
+  const url = tries.map(u => decode(u).trim()).find(u => /^https:\/\//.test(u));
+  return url || null;
+}
+
 export function parseRss(xml, feed) {
   const items = xml.match(/<item[\s>][\s\S]*?<\/item>/gi) || [];
   return items.map(b => {
@@ -36,7 +52,7 @@ export function parseRss(xml, feed) {
     const date = Date.parse(strip(tag(b, "pubDate")) || strip(tag(b, "dc:date"))) || Date.now();
     let summary = strip(tag(b, "description"));
     if (summary.length > 240) summary = summary.slice(0, 237).replace(/\s+\S*$/, "") + "…";
-    return { title, link, date, summary, source: feed.source, cat: feed.cat || guessCat(title + " " + summary) };
+    return { title, link, date, summary, image: pickImage(b), source: feed.source, cat: feed.cat || guessCat(title + " " + summary) };
   }).filter(i => i.title && i.cat && /^https?:\/\//.test(i.link) && !SKIP_LINK.test(i.link) && !SKIP_TITLE.test(i.title));
 }
 

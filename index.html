@@ -730,6 +730,12 @@ footer img{width:26px;opacity:.85}
 #tv-events{margin:-.4rem -.4rem 0}
 @media (max-width:760px){.mkt-table .rng{width:56px}}
 .mkt-grid.solo{grid-template-columns:1fr}
+
+.cover .ph{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;display:block}
+.lead-story .cover .ph{filter:saturate(1.05)}
+.story.has-th{grid-template-columns:150px 1fr auto;align-items:center}
+.story .th{width:150px;aspect-ratio:3/2;border-radius:12px}
+@media (max-width:760px){.story.has-th{grid-template-columns:96px 1fr}.story .th{width:96px}}
 </style>
 </head>
 <body>
@@ -1268,17 +1274,18 @@ document.getElementById("agenda").innerHTML = AG.map(([h,e,i]) => `<li><time>${h
   let REAL=false;
   const href=n=>n.link?`href="${esc(n.link)}" target="_blank" rel="noopener"`:`href="#news" data-demo`;
   const meta=n=>`<span class="ago">${esc(n.source)} | ${ago(n.date)}</span>`;
+  const photo=n=>n.image?`<img class="ph" src="${esc(n.image)}" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.remove()">`:"";
 
   function renderNews(items){
     const li=Math.max(0,items.findIndex(n=>n.summary&&n.summary.length>40));
     const lead=items[li], rest=items.filter((_,i)=>i!==li), mids=rest.slice(0,2), most=rest.slice(2,7), smalls=rest.slice(7,11);
     const feed=items.length>11?rest.slice(11):items;
     $("lead").className="lead-story";
-    $("lead").innerHTML=`<a class="nw-card" ${href(lead)}><span class="cover">${cover(lead.cat,hash(lead.title),800,525)}</span><span class="badge-top">Destaque</span>
+    $("lead").innerHTML=`<a class="nw-card" ${href(lead)}><span class="cover">${cover(lead.cat,hash(lead.title),800,525)}${photo(lead)}</span><span class="badge-top">Destaque</span>
       <div class="ov"><span class="cat ${lead.cat}">${TAG[lead.cat]}</span><h3>${esc(lead.title)}</h3>${lead.summary?`<p>${esc(lead.summary)}</p>`:""}${meta(lead)}</div></a>`;
-    $("mids").innerHTML=mids.map(n=>`<a class="nw-card mid" ${href(n)}><span class="cover">${cover(n.cat,hash(n.title),480,270)}</span><span class="cat ${n.cat}">${TAG[n.cat]}</span><h3>${esc(n.title)}</h3>${meta(n)}</a>`).join("");
+    $("mids").innerHTML=mids.map(n=>`<a class="nw-card mid" ${href(n)}><span class="cover">${cover(n.cat,hash(n.title),480,270)}${photo(n)}</span><span class="cat ${n.cat}">${TAG[n.cat]}</span><h3>${esc(n.title)}</h3>${meta(n)}</a>`).join("");
     $("most").innerHTML=most.map(n=>`<li><a class="nw-card" ${href(n)}><h4>${esc(n.title)}</h4></a></li>`).join("");
-    $("smalls").innerHTML=smalls.map(n=>`<a class="nw-card small" ${href(n)}><span class="cover">${cover(n.cat,hash(n.title),200,200)}</span><span><span class="cat ${n.cat}">${TAG[n.cat]}</span><h4>${esc(n.title)}</h4>${meta(n)}</span></a>`).join("");
+    $("smalls").innerHTML=smalls.map(n=>`<a class="nw-card small" ${href(n)}><span class="cover">${cover(n.cat,hash(n.title),200,200)}${photo(n)}</span><span><span class="cat ${n.cat}">${TAG[n.cat]}</span><h4>${esc(n.title)}</h4>${meta(n)}</span></a>`).join("");
     FEED=feed; renderChips(); renderFeed();
   }
 
@@ -1292,9 +1299,9 @@ document.getElementById("agenda").innerHTML = AG.map(([h,e,i]) => `<li><time>${h
   }
   chips.addEventListener("click",e=>{ const b=e.target.closest("button"); if(!b) return; filter=b.dataset.f; chips.querySelectorAll("button").forEach(x=>x.setAttribute("aria-pressed",x===b)); renderFeed(); });
   function renderFeed(){
-    $("feed").innerHTML=FEED.filter(n=>filter==="todas"||n.cat===filter).map(n=>`<a class="story" ${href(n)}>
-      <span class="when">${ago(n.date)}</span>
-      <div><span class="cat">${TAG[n.cat]}</span><h4>${esc(n.title)}</h4>${n.summary?`<p>${esc(n.summary)}</p>`:""}<div class="src">${esc(n.source)}</div></div>
+    $("feed").innerHTML=FEED.filter(n=>filter==="todas"||n.cat===filter).map(n=>`<a class="story has-th" ${href(n)}>
+      <span class="cover th">${cover(n.cat,hash(n.title),200,140)}${photo(n)}</span>
+      <div><span class="cat">${TAG[n.cat]}</span><h4>${esc(n.title)}</h4>${n.summary?`<p>${esc(n.summary)}</p>`:""}<div class="src">${esc(n.source)} | ${ago(n.date)}</div></div>
       <span class="go">Ler na fonte</span></a>`).join("");
   }
   document.addEventListener("click",e=>{ const a=e.target.closest("a[data-demo]"); if(!a) return; e.preventDefault(); alert("Notícia de exemplo: no site com a integração ativa, este link abre a matéria completa no portal de origem."); });
